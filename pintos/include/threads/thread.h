@@ -95,16 +95,12 @@ struct thread {
 	/* thread.c와 synch.c 간에 공유됩니다. */
 	struct list_elem elem;             		/*목록 요소. */
 
-//1차---------------------------------------------------------------------------------------------------------------------------------------------------
 	/* Alarm clock: 일어날 시각 (timer tick 단위) */
 	int64_t wakeup_tick;					 // 스레드가 깨어나야 하는 시각을 타이머 틱 단위로 저장
-//------------------------------------------------------------------------------------------------------------------------------------------------------
 
-//mlfqs
 	int nice;                               // 양보 정도 (-20 ~ 20), 정수
 	int recent_cpu;                         // 최근 CPU 사용량, 고정소수점
 	struct list_elem all_elem;              // all_list에 연결하기 위한 요소
-//mlfqs
 
 	#ifdef USERPROG
 		/*userprog/process.c가 소유함. */
@@ -137,10 +133,8 @@ tid_t thread_create (const char *name, int priority, thread_func *, void *);
 
 void thread_block (void);
 void thread_unblock (struct thread *);
-//1차---------------------------------------------------------------------------------------------------------------------------------------------------
 void sleep_put 		(int64_t);
 void sleep_wakeup 	(int64_t);
-//------------------------------------------------------------------------------------------------------------------------------------------------------
 
 struct thread *thread_current (void);
 tid_t thread_tid (void);
@@ -157,14 +151,12 @@ void thread_set_nice (int);
 int thread_get_recent_cpu (void);
 int thread_get_load_avg (void);
 
-//mlfqs
 void mlfqs_calc_priority (struct thread *t);      // 스레드 t의 priority 재계산
 void mlfqs_calc_recent_cpu (struct thread *t);    // 스레드 t의 recent_cpu 재계산
 void mlfqs_update_load_avg (void);                // load_avg 갱신 (1초마다)
 void mlfqs_increment_recent_cpu (void);           // 현재 스레드 recent_cpu + 1 (매 틱)
 void mlfqs_update_recent_cpu_all (void);          // 모든 스레드 recent_cpu 갱신 (1초마다)
 void mlfqs_update_priority_all (void);            // 모든 스레드 priority 갱신 (4틱마다)
-//mlfqs
 
 void do_iret (struct intr_frame *tf);
 void thread_check_preemption (void);

@@ -28,14 +28,10 @@
 /* THREAD_READY 상태인 프로세스들의 목록, 즉 실행 준비는 되었으나
 실제로 실행 중이지는 않은 프로세스들. */
 static struct list ready_list;
-//1차---------------------------------------------------------------------------------------------------------------------------------------------------
 static struct list sleep_list;
-//------------------------------------------------------------------------------------------------------------------------------------------------------
 
-//mlfqs
 static struct list all_list;    // 모든 스레드 목록 (추가/제거: A, 순회: B)
 static int load_avg;            // 시스템 평균 부하, 고정소수점
-//mlfqs
 
 /* Idle thread. */
 static struct thread *idle_thread;
@@ -119,14 +115,10 @@ thread_init (void) {
 	/* 전역 스레드 컨텍스트 초기화 */
 	lock_init (&tid_lock);
 	list_init (&ready_list);
-	//1차---------------------------------------------------------------------------------------------------------------------------------------------------
 	list_init (&sleep_list);
-	//------------------------------------------------------------------------------------------------------------------------------------------------------
 	list_init (&destruction_req);
-	//mlfqs
 	list_init (&all_list);                      // 모든 스레드 목록 초기화 (init_thread보다 먼저)
 	load_avg = 0;                               // 시스템 평균 부하 0에서 시작
-	//mlfqs
 
 	/* 실행 중인 스레드를 위한 스레드 구조체를 설정합니다. */
 	initial_thread = running_thread ();
@@ -208,12 +200,10 @@ thread_create (const char *name, int priority,
 	init_thread (t, name, priority);
 	tid = t->tid = allocate_tid ();
 
-	//mlfqs
 	t->nice = thread_current ()->nice;              // 부모의 nice 상속
 	t->recent_cpu = thread_current ()->recent_cpu;  // 부모의 recent_cpu 상속
 	if (thread_mlfqs)
 		mlfqs_calc_priority (t);                    // 인자로 받은 priority 대신 공식으로 계산
-	//mlfqs
 
 	/* Call the kernel_thread if it scheduled.
 	 * Note) rdi is 1st argument, and rsi is 2nd argument. */
@@ -298,7 +288,6 @@ thread_unblock (struct thread *t) {
 	intr_set_level (old_level);
 }
 
-//1차----------------------------------------------------------------------------------------------------------------------------------
 // 깨어날 시각(wakeup_tick)과 우선순위(priority)를 기준으로 스레드 순서를 비교
 bool thread_wakeup_less(const struct list_elem *a, const struct list_elem *b, void *aux UNUSED)
 {
@@ -348,7 +337,6 @@ sleep_wakeup (int64_t current_tick)
 		}
 	}
 }
-//------------------------------------------------------------------------------------------------------------------------------------------------------
 
 /* Returns the name of the running thread. */
 const char *
@@ -392,9 +380,7 @@ thread_exit (void) {
 	/* Just set our status to dying and schedule another process.
 	   We will be destroyed during the call to schedule_tail(). */
 	intr_disable ();
-	//mlfqs - thread_exit()
 	list_remove (&thread_current ()->all_elem);     // 종료하는 스레드를 all_list에서 제거
-	//mlfqs
 	do_schedule (THREAD_DYING);
 	NOT_REACHED ();
 }
@@ -473,7 +459,6 @@ thread_get_recent_cpu (void) {
 	return get_r;
 }
 
-//mlfqs
 /* priority = PRI_MAX - (recent_cpu / 4) - (nice * 2), 버림, PRI_MIN~PRI_MAX로 자르기 */
 void
 mlfqs_calc_priority (struct thread *t UNUSED) {
@@ -552,7 +537,6 @@ mlfqs_update_priority_all (void) {
 			mlfqs_calc_priority (f); 								// 해당 스레드의 recent_cpu 값을 갱신
 	}
 }
-//mlfqs
 
 /* Idle thread.  Executes when no other thread is ready to run.
 
@@ -622,14 +606,12 @@ init_thread (struct thread *t, const char *name, int priority) {
 	t->wait_on_lock = NULL;
 	list_init(&(t->donations));
 
-	//mlfqs - init_thread()
 	t->nice = 0;                                // 기본값 (thread_create에서 부모 값으로 덮어씀)
 	t->recent_cpu = 0;                          // 기본값 (thread_create에서 부모 값으로 덮어씀)
 
 	enum intr_level old_level = intr_disable (); // 타이머 인터럽트가 all_list를 순회하므로 보호
 	list_push_back (&all_list, &t->all_elem);   // 모든 스레드 목록에 등록
 	intr_set_level (old_level);
-	//mlfqs
 }
 
 /* 다음에 스케줄링할 스레드를 선택하여 반환합니다.
