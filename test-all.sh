@@ -2,6 +2,7 @@
 # userprog(프로젝트 2) 채점 대상 테스트 전체 실행 스크립트
 #
 # 사용법 (저장소 최상위 디렉터리에서):
+#     chmod +x pintos/utils/* test-all.sh
 #   ./test-all.sh            # 전체 테스트 (병렬 실행)
 #   JOBS=1 ./test-all.sh     # 순차 실행
 #   ./test-all.sh fork       # 경로에 'fork'가 포함된 테스트만

@@ -22,6 +22,8 @@
 #include "vm/vm.h"
 #endif
 
+#define MAX_ARGS 64 // AP: 명령줄 최대 단어 수 (128바이트 명령줄 기준)
+
 static void process_cleanup (void);
 static bool load (const char *file_name, struct intr_frame *if_);
 static void initd (void *f_name);
@@ -329,13 +331,22 @@ load (const char *file_name, struct intr_frame *if_) {
 	bool success = false;
 	int i;
 
+	/* ① */ // AP
+	int argc = 0;                  // AP: 단어 개수 (프로그램 이름 포함)
+	char *argv[MAX_ARGS + 1];      // AP: 단어 주소 배열, argv[argc] = NULL
+	char *cmd_copy = NULL;         // AP: 명령줄 복사본 (done:에서 해제)
+	char *token, *save_ptr;        // AP: strtok_r용
+
 	/* Allocate and activate page directory. */
 	t->pml4 = pml4_create ();
 	if (t->pml4 == NULL)
 		goto done;
 	process_activate (thread_current ());
 
+	/* ② */ // AP
+
 	/* Open executable file. */
+	/* ③ */ // AP
 	file = filesys_open (file_name);
 	if (file == NULL) {
 		printf ("load: %s: open failed\n", file_name);
@@ -416,11 +427,13 @@ load (const char *file_name, struct intr_frame *if_) {
 
 	/* TODO: Your code goes here.
 	 * TODO: Implement argument passing (see project2/argument_passing.html). */
+	/* ④ */ // AP
 
 	success = true;
 
 done:
 	/* We arrive here whether the load is successful or not. */
+	/* ⑤ */ // AP
 	file_close (file);
 	return success;
 }

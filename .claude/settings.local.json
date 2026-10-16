@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(gh auth *)",
+      "Bash(gh project *)",
+      "PowerShell(\\(Get-Command gh -ErrorAction SilentlyContinue\\).Source; Test-Path \"C:\\\\Program Files\\\\GitHub CLI\\\\gh.exe\")"
+    ]
+  }
+}
