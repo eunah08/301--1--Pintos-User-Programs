@@ -462,9 +462,44 @@ load (const char *file_name, struct intr_frame *if_) {
 
     /* TODO: Your code goes here.
      * TODO: Implement argument passing (see project2/argument_passing.html). */
-    /* ④ */ // AP
+    /* ④ */ // AP	EN 
 
-    success = true;
+	char *arg_addr[MAX_ARGS];   // 각 인자 문자열이 저장된 유저 스택 주소를 보관하는 배열
+
+	/* 1. 문자열 push (역순) */
+	for (i = argc - 1; i >= 0; i--) {   			// 마지막 인자부터 첫 번째 인자까지 역순으로 반복
+		size_t len = strlen (argv[i]) + 1;  		// 문자열 길이에 널 문자('\0') 크기 1바이트를 더함
+		if_->rsp -= len;                   	 		// 스택 포인터를 문자열 길이만큼 아래로 이동
+		memcpy ((void *) if_->rsp, argv[i], len); 	// 문자열과 널 문자를 스택에 복사
+		arg_addr[i] = (char *) if_->rsp;    		// 복사한 문자열의 시작 주소를 배열에 저장
+	}
+
+	/* 2. 8바이트 정렬 */
+	while (if_->rsp % 8 != 0) {         			// 스택 주소가 8의 배수가 될 때까지 반복
+		if_->rsp--;                     			// 스택 포인터를 1바이트씩 아래로 이동
+		*(uint8_t *) if_->rsp = 0;      			// 이동한 위치에 패딩용 0을 기록
+	}
+
+	/* 3. argv[argc] = NULL */
+	if_->rsp -= sizeof (char *);        			// 포인터 1개를 저장할 공간만큼 스택 확보
+	*(char **) if_->rsp = NULL;         			// 포인터 배열의 마지막에 NULL을 저장해 끝을 표시
+
+	/* 4. 문자열 주소 push (역순) */
+	for (i = argc - 1; i >= 0; i--) {  				// 마지막 인자의 주소부터 역순으로 반복
+		if_->rsp -= sizeof (char *);    			// 포인터 1개를 저장할 공간 확보
+		*(char **) if_->rsp = arg_addr[i]; 			// 해당 인자 문자열의 시작 주소를 스택에 저장
+	}
+
+	/* 5. 레지스터 세팅 */
+	if_->R.rdi = argc;                  			// 첫 번째 인자 전달 레지스터에 인자 개수 저장
+	if_->R.rsi = if_->rsp;              			// 두 번째 인자 전달 레지스터에 argv 배열의 시작 주소 저장
+
+	/* 6. 가짜 리턴 주소 */
+	if_->rsp -= sizeof (void *);        			// 리턴 주소 크기만큼 스택 공간 확보
+	*(void **) if_->rsp = NULL;         			// 가짜 리턴 주소로 NULL을 저장
+
+	success = true;                     			// 인자 전달을 위한 스택 설정이 완료되었음을 표시
+
 
 done:
     /* We arrive here whether the load is successful or not. */
