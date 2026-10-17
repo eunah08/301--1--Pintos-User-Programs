@@ -15,6 +15,7 @@
 void syscall_entry (void);
 void syscall_handler (struct intr_frame *);
 
+void sys_halt(void);
 void sys_exit(int status);
 int sys_write(int fd, const void *buffer, unsigned size);
 
@@ -58,18 +59,18 @@ syscall_handler (struct intr_frame *f) {
 
 	// SW: rax 레지스터가 시스템 콜 번호이므로 여기서 분기
 	switch(f->R.rax) {
-		case SYS_WRITE:
-		int w_size;
-		w_size = sys_write((int)rdi, (const void*)rsi, rdx);
-		f->R.rax = (uint64_t)w_size;
-		break;
-
 		case SYS_HALT:
-		power_off();
+		sys_halt();
 		break;
 
 		case SYS_EXIT:
 		sys_exit(rdi);
+		break;
+
+		case SYS_WRITE:
+		int w_size;
+		w_size = sys_write((int)rdi, (const void*)rsi, rdx);
+		f->R.rax = (uint64_t)w_size;
 		break;
 
 		default:
@@ -77,10 +78,18 @@ syscall_handler (struct intr_frame *f) {
 	}
 }
 
+// SW: (강제)종료 시스템 콜 wrapper 함수
+void sys_halt() {
+	power_off();
+}
+
 // SW: (정상)종료 시스템 콜 wrapper 함수
 // TODO: 종료 메시지를 출력해야 하는 상황
 void sys_exit(int status) {
-	process_exit();
+	thread_exit();
+	if (power_off_when_done) {
+		power_off();
+	}
 }
 
 // SW: 쓰기 시스템 콜 wrapper 함수
