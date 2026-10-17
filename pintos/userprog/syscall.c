@@ -8,8 +8,15 @@
 #include "threads/flags.h"
 #include "intrinsic.h"
 
+// 추가 헤더
+#include "lib/user/syscall.h"
+#include "threads/init.h"
+
 void syscall_entry (void);
 void syscall_handler (struct intr_frame *);
+
+void sys_exit(int status);
+int sys_write(int fd, const void *buffer, unsigned size);
 
 /* System call.
  *
@@ -39,8 +46,47 @@ syscall_init (void) {
 
 /* The main system call interface */
 void
-syscall_handler (struct intr_frame *f UNUSED) {
-	// TODO: Your implementation goes here.
-	printf ("system call!\n");
-	thread_exit ();
+syscall_handler (struct intr_frame *f) {
+	// SW: 레지스터 값을 읽어서 가져오고
+	uint64_t rax = f->R.rax;
+	uint64_t rdi = f->R.rdi;
+	uint64_t rsi = f->R.rsi;
+	uint64_t rdx = f->R.rdx;
+	uint64_t r10 = f->R.r10;
+	uint64_t r8 = f->R.r8;
+	uint64_t r9 = f->R.r9;
+
+	// SW: rax 레지스터가 시스템 콜 번호이므로 여기서 분기
+	switch(f->R.rax) {
+		case SYS_WRITE:
+		int w_size;
+		w_size = sys_write((int)rdi, (const void*)rsi, rdx);
+		f->R.rax = (uint64_t)w_size;
+		break;
+
+		case SYS_HALT:
+		power_off();
+		break;
+
+		case SYS_EXIT:
+		sys_exit(rdi);
+		break;
+
+		default:
+		break;
+	}
+}
+
+// SW: (정상)종료 시스템 콜 wrapper 함수
+// TODO: 종료 메시지를 출력해야 하는 상황
+void sys_exit(int status) {
+	process_exit();
+}
+
+// SW: 쓰기 시스템 콜 wrapper 함수
+int sys_write(int fd, const void *buffer, unsigned size) {
+	if (fd == STDOUT_FILENO) {
+		putbuf((const char*)buffer, size);
+		return size;
+	}
 }
