@@ -90,8 +90,6 @@ struct thread {
 	struct lock *wait_on_lock;
 	struct list donations;
 	struct list_elem donation_elem;
-
-
 	/* thread.c와 synch.c 간에 공유됩니다. */
 	struct list_elem elem;             		/*목록 요소. */
 
