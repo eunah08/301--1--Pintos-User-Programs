@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <syscall.h>
+#include "lib/user/syscall.h"
 
 const char *test_name;
 bool quiet = false;
