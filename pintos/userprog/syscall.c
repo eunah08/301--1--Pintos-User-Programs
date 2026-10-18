@@ -80,10 +80,10 @@ syscall_handler (struct intr_frame *f) {
 // SW: (정상)종료 시스템 콜 wrapper 함수
 // TODO: 종료 메시지를 출력해야 하는 상황
 void sys_exit(int status) {
-	process_exit();
+	printf("%s: exit(%d)\n", thread_name(), status);
+    thread_exit();
 }
-
-// SW: 쓰기 시스템 콜 wrapper 함수
+// SW: 쓰기 시스템 콜 wuserprog/syscall.crapper 함수
 int sys_write(int fd, const void *buffer, unsigned size) {
 	if (fd == STDOUT_FILENO) {
 		putbuf((const char*)buffer, size);
