@@ -150,9 +150,13 @@ page_fault (struct intr_frame *f) {
 	/* Count page faults. */
 	page_fault_cnt++;
 
-	if (user == true) {
-		sys_exit(-1);
-	}
+// 5번 동작 시작: 유저 모드 페이지 폴트 시 커널 패닉 대신 안전 종료 처리
+    /* page_fault() 함수 내부 */
+    if (user) {                        // 커널 모드가 아닌 유저 프로그램 실행 도중 발생한 폴트인지 확인
+        sys_exit(-1);                  // 커널 패닉을 일으키지 않고 유저 프로세스를 안전하게 종료(-1)
+    }
+// 5번 동작 끝
+
 	/* If the fault is true fault, show info and exit. */
 	printf ("Page fault at %p: %s error %s page in %s context.\n",
 			fault_addr,
