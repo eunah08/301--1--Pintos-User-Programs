@@ -231,8 +231,8 @@ process_exit (void) {
      * TODO: Implement process termination message (see
      * TODO: project2/process_termination.html).
      * TODO: We recommend you to implement process resource cleanup here. */
-
     sema_up(&sema); // SW: 자식 프로세스가 세마포어를 올리면 그때 부모 프로세스가 같이 종료
+    printf("%s: exit(%d)\n", curr->name, curr->tf.R.rax);
     process_cleanup ();
 }
 
