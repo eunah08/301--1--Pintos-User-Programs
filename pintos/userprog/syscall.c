@@ -8,8 +8,7 @@
 #include "threads/flags.h"
 #include "intrinsic.h"
 
-// 추가 헤더
-#include "lib/user/syscall.h"
+// 추가 헤더 (유저용 헤더인 lib/user/syscall.h는 제거)
 #include "threads/init.h"
 #include "threads/vaddr.h" //EN
 #include "threads/mmu.h" //EN
@@ -17,10 +16,16 @@
 void syscall_entry (void);
 void syscall_handler (struct intr_frame *);
 
+// 함수 프로토타입 (하단 구현부와 타입 완전 일치)
+void check_address(const void *addr);
 void sys_exit(int status);
 int sys_write(int fd, const void *buffer, unsigned size);
+<<<<<<< HEAD
+int sys_read(int fd, void *buffer, unsigned size);
+=======
 int sys_read(int fd, const void *buffer, unsigned size);
 void check_address(const void *addr); //EN
+>>>>>>> 814d6d423683f84439e875618e586462eff41adf
 
 /* System call.
  *
@@ -61,6 +66,16 @@ syscall_handler (struct intr_frame *f) {
 	uint64_t r9 = f->R.r9;
 
 	// 4번 동작 시작: syscall_handler 내부의 시스템 콜 번호 분기 처리
+<<<<<<< HEAD
+	switch (f->R.rax) {                // rax 레지스터에 담긴 시스템 콜 식별 번호로 분기
+        case SYS_WRITE:                // 시스템 콜 번호가 SYS_WRITE일 때
+            f->R.rax = (uint64_t)sys_write((int)rdi, (const void *)rsi, (unsigned)rdx); // rdi(fd), rsi(buffer), rdx(size) 전달 후 결과 rax에 저장
+            break;
+
+        case SYS_READ:                 // 시스템 콜 번호가 SYS_READ일 때
+            f->R.rax = (uint64_t)sys_read((int)rdi, (void *)rsi, (unsigned)rdx);        // rdi(fd), rsi(buffer), rdx(size) 전달 후 결과 rax에 저장
+            break;
+=======
 	// SW: rax 레지스터가 시스템 콜 번호이므로 여기서 분기
 	switch(f->R.rax) {
 		case SYS_WRITE:
@@ -73,11 +88,23 @@ syscall_handler (struct intr_frame *f) {
 		case SYS_HALT:
 		power_off();
 		break;
+>>>>>>> 814d6d423683f84439e875618e586462eff41adf
 
 		case SYS_EXIT:
 		sys_exit(rdi);
 		break;
 
+<<<<<<< HEAD
+        case SYS_EXIT:                 // 시스템 콜 번호가 SYS_EXIT일 때
+            sys_exit((int)rdi);             // rdi 레지스터에 담긴 종료 상태 코드(status)로 프로세스 종료
+            break;
+
+        default:                       // 아직 구현되지 않은 시스템 콜 번호가 들어온 경우
+            break;                     // 아무 작업도 하지 않고 탈출
+        }
+    }
+
+=======
 		case SYS_CREATE: // 파일 생성 시스템 콜
 			check_address((const void *)rdi);
 			break;
@@ -98,6 +125,7 @@ syscall_handler (struct intr_frame *f) {
 		break;
 	}
 }
+>>>>>>> 814d6d423683f84439e875618e586462eff41adf
 // 4번 동작 끝
 
 // SW: (정상)종료 시스템 콜 wrapper 함수
