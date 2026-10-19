@@ -8,17 +8,17 @@
 #include "threads/flags.h"
 #include "intrinsic.h"
 
-// 추가 헤더
-#include "lib/user/syscall.h"
+// 추가 헤더 (유저용 헤더인 lib/user/syscall.h는 제거)
 #include "threads/init.h"
 
 void syscall_entry (void);
 void syscall_handler (struct intr_frame *);
 
+// 함수 프로토타입 (하단 구현부와 타입 완전 일치)
+void check_address(const void *addr);
 void sys_exit(int status);
 int sys_write(int fd, const void *buffer, unsigned size);
-int sys_read(int fd, const void *buffer, unsigned size);
-
+int sys_read(int fd, void *buffer, unsigned size);
 
 /* System call.
  *
@@ -61,11 +61,11 @@ syscall_handler (struct intr_frame *f) {
 	// 4번 동작 시작: syscall_handler 내부의 시스템 콜 번호 분기 처리
 	switch (f->R.rax) {                // rax 레지스터에 담긴 시스템 콜 식별 번호로 분기
         case SYS_WRITE:                // 시스템 콜 번호가 SYS_WRITE일 때
-            f->R.rax = (uint64_t)sys_write((int)rdi, (const void *)rsi, rdx); // rdi(fd), rsi(buffer), rdx(size) 전달 후 결과 rax에 저장
+            f->R.rax = (uint64_t)sys_write((int)rdi, (const void *)rsi, (unsigned)rdx); // rdi(fd), rsi(buffer), rdx(size) 전달 후 결과 rax에 저장
             break;
 
         case SYS_READ:                 // 시스템 콜 번호가 SYS_READ일 때
-            f->R.rax = (uint64_t)sys_read((int)rdi, (void *)rsi, rdx);        // rdi(fd), rsi(buffer), rdx(size) 전달 후 결과 rax에 저장
+            f->R.rax = (uint64_t)sys_read((int)rdi, (void *)rsi, (unsigned)rdx);        // rdi(fd), rsi(buffer), rdx(size) 전달 후 결과 rax에 저장
             break;
 
         case SYS_HALT:                 // 시스템 콜 번호가 SYS_HALT일 때
@@ -73,12 +73,14 @@ syscall_handler (struct intr_frame *f) {
             break;
 
         case SYS_EXIT:                 // 시스템 콜 번호가 SYS_EXIT일 때
-            sys_exit(rdi);             // rdi 레지스터에 담긴 종료 상태 코드(status)로 프로세스 종료
+            sys_exit((int)rdi);             // rdi 레지스터에 담긴 종료 상태 코드(status)로 프로세스 종료
             break;
 
         default:                       // 아직 구현되지 않은 시스템 콜 번호가 들어온 경우
             break;                     // 아무 작업도 하지 않고 탈출
+        }
     }
+
 // 4번 동작 끝
 
 // SW: (정상)종료 시스템 콜 wrapper 함수
