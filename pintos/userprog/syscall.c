@@ -20,12 +20,7 @@ void syscall_handler (struct intr_frame *);
 void check_address(const void *addr);
 void sys_exit(int status);
 int sys_write(int fd, const void *buffer, unsigned size);
-<<<<<<< HEAD
 int sys_read(int fd, void *buffer, unsigned size);
-=======
-int sys_read(int fd, const void *buffer, unsigned size);
-void check_address(const void *addr); //EN
->>>>>>> 814d6d423683f84439e875618e586462eff41adf
 
 /* System call.
  *
@@ -66,70 +61,37 @@ syscall_handler (struct intr_frame *f) {
 	uint64_t r9 = f->R.r9;
 
 	// 4번 동작 시작: syscall_handler 내부의 시스템 콜 번호 분기 처리
-<<<<<<< HEAD
-	switch (f->R.rax) {                // rax 레지스터에 담긴 시스템 콜 식별 번호로 분기
-        case SYS_WRITE:                // 시스템 콜 번호가 SYS_WRITE일 때
-            f->R.rax = (uint64_t)sys_write((int)rdi, (const void *)rsi, (unsigned)rdx); // rdi(fd), rsi(buffer), rdx(size) 전달 후 결과 rax에 저장
-            break;
-
-        case SYS_READ:                 // 시스템 콜 번호가 SYS_READ일 때
-            f->R.rax = (uint64_t)sys_read((int)rdi, (void *)rsi, (unsigned)rdx);        // rdi(fd), rsi(buffer), rdx(size) 전달 후 결과 rax에 저장
-            break;
-=======
-	// SW: rax 레지스터가 시스템 콜 번호이므로 여기서 분기
-	switch(f->R.rax) {
-		case SYS_WRITE:
-		check_address((const void *)rsi); //EN
-		int w_size;
-		w_size = sys_write((int)rdi, (const void*)rsi, rdx);
-		f->R.rax = (uint64_t)w_size;
-		break;
-
+	switch (f->R.rax) {
 		case SYS_HALT:
-		power_off();
-		break;
->>>>>>> 814d6d423683f84439e875618e586462eff41adf
+			power_off();
+			break;
 
 		case SYS_EXIT:
-		sys_exit(rdi);
-		break;
-
-<<<<<<< HEAD
-        case SYS_EXIT:                 // 시스템 콜 번호가 SYS_EXIT일 때
-            sys_exit((int)rdi);             // rdi 레지스터에 담긴 종료 상태 코드(status)로 프로세스 종료
-            break;
-
-        default:                       // 아직 구현되지 않은 시스템 콜 번호가 들어온 경우
-            break;                     // 아무 작업도 하지 않고 탈출
-        }
-    }
-
-=======
-		case SYS_CREATE: // 파일 생성 시스템 콜
-			check_address((const void *)rdi);
+			sys_exit((int)rdi);
 			break;
 
-		case SYS_OPEN: // 파일 열기 시스템 콜
-			check_address((const void *)rdi);
+		case SYS_WRITE:
+			f->R.rax = (uint64_t)sys_write((int)rdi, (const void *)rsi, (unsigned)rdx);
 			break;
 
-		case SYS_EXEC: // 새 유저 프로그램 실행 시스템 콜
-			check_address((const void *)rdi);
+		case SYS_READ:
+			f->R.rax = (uint64_t)sys_read((int)rdi, (void *)rsi, (unsigned)rdx);
 			break;
 
-		case SYS_READ: // 파일 또는 입력 장치에서 데이터 읽기
-			f->R.rax = (uint64_t)sys_read((int)rdi, (void *)rsi, rdx); // rdi(fd), rsi(buffer), rdx(size) 전달 후 결과 rax에 저장
+		// 아직 구현되지 않은 시스템 콜은 주소 검사만 먼저 수행
+		case SYS_CREATE:
+		case SYS_OPEN:
+		case SYS_EXEC:
+			check_address((const void *)rdi);
 			break;
 
 		default:
-		break;
+			break;
 	}
 }
->>>>>>> 814d6d423683f84439e875618e586462eff41adf
 // 4번 동작 끝
 
 // SW: (정상)종료 시스템 콜 wrapper 함수
-// TODO: 종료 메시지를 출력해야 하는 상황
 void sys_exit(int status) { 									// 프로세스를 종료하는 시스템 콜 함수이며 종료 상태를 전달받음
     printf("%s: exit(%d)\n", thread_current()->name, status); 	// 현재 스레드의 이름과 종료 상태를 출력
     thread_exit(); 												// 현재 스레드를 종료하고 스케줄러가 다른 스레드를 실행할 수 있도록 함
