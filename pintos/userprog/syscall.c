@@ -11,12 +11,15 @@
 // 추가 헤더
 #include "lib/user/syscall.h"
 #include "threads/init.h"
+#include "threads/vaddr.h" //EN
+#include "threads/mmu.h" //EN
 
 void syscall_entry (void);
 void syscall_handler (struct intr_frame *);
 
 void sys_exit(int status);
 int sys_write(int fd, const void *buffer, unsigned size);
+void check_address(const void *addr); //EN
 
 /* System call.
  *
@@ -59,6 +62,7 @@ syscall_handler (struct intr_frame *f) {
 	// SW: rax 레지스터가 시스템 콜 번호이므로 여기서 분기
 	switch(f->R.rax) {
 		case SYS_WRITE:
+		check_address((const void *)rsi); //EN
 		int w_size;
 		w_size = sys_write((int)rdi, (const void*)rsi, rdx);
 		f->R.rax = (uint64_t)w_size;
@@ -72,6 +76,22 @@ syscall_handler (struct intr_frame *f) {
 		sys_exit(rdi);
 		break;
 
+		case SYS_CREATE: // 파일 생성 시스템 콜
+			check_address((const void *)rdi);
+			break;
+
+		case SYS_OPEN: // 파일 열기 시스템 콜
+			check_address((const void *)rdi);
+			break;
+
+		case SYS_EXEC: // 새 유저 프로그램 실행 시스템 콜
+			check_address((const void *)rdi);
+			break;
+
+		case SYS_READ: // 파일 또는 입력 장치에서 데이터 읽기
+			check_address((const void *)rsi);
+			break;
+
 		default:
 		break;
 	}
@@ -79,8 +99,17 @@ syscall_handler (struct intr_frame *f) {
 
 // SW: (정상)종료 시스템 콜 wrapper 함수
 // TODO: 종료 메시지를 출력해야 하는 상황
-void sys_exit(int status) {
-	process_exit();
+void sys_exit(int status) { 									// 프로세스를 종료하는 시스템 콜 함수이며 종료 상태를 전달받음
+    printf("%s: exit(%d)\n", thread_current()->name, status); 	// 현재 스레드의 이름과 종료 상태를 출력
+    thread_exit(); 												// 현재 스레드를 종료하고 스케줄러가 다른 스레드를 실행할 수 있도록 함
+}
+
+// EN: 유저가 넘긴 주소가 NULL, 커널 영역, 할당 안 된 곳이면 프로세스 종료 //EN
+void check_address(const void *addr) { 							// 전달받은 주소가 유효한 유저 메모리 주소인지 검사하는 함수
+    if (addr == NULL                  							// 주소가 NULL인지 확인
+        || !is_user_vaddr(addr)       							// 유저 영역의 가상 주소가 아닌지 확인
+        || pml4_get_page(thread_current()->pml4, addr) == NULL) // 현재 스레드의 페이지 테이블에 해당 주소의 매핑이 존재하는지 확인
+        sys_exit(-1);                 							// 조건 중 하나라도 참이면 프로세스를 종료하고 -1을 반환
 }
 
 // SW: 쓰기 시스템 콜 wrapper 함수
