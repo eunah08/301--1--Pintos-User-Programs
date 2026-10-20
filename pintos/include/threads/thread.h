@@ -102,7 +102,10 @@ struct thread {
 
 	#ifdef USERPROG
 		/*userprog/process.c가 소유함. */
+		int next_fd_num;                    // 다음으로 부여할 fd 번호, 2부터 시작
+		struct list fd_table;               // 열린 파일들 (구현이 완료되면 #ifdef USERPROG 안으로 들어갈 예정)
 		uint64_t *pml4;                     /* 페이지 맵 레벨 4 */
+
 	#endif
 	#ifdef VM
 		/* 스레드가 소유한 전체 가상 메모리에 대한 테이블. */
