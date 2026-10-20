@@ -23,8 +23,6 @@ struct fd_entry {
 	struct list_elem elem;
 };
 
-struct list_elem *find_fd_with_num(int fd);
-
 void syscall_entry (void);
 void syscall_handler (struct intr_frame *);
 
@@ -36,7 +34,10 @@ int sys_read(int fd, void *buffer, unsigned size);
 bool sys_create(const char *file, unsigned initial_size);
 int sys_open(const char *file);
 int sys_filesize(int fd);
+unsigned sys_tell(int fd);
 void sys_close(int fd);
+
+struct list_elem *find_fd_with_num(int fd);
 
 /* System call.
  *
@@ -106,11 +107,15 @@ syscall_handler (struct intr_frame *f) {
 			break;
 
 		case SYS_FILESIZE:
-			f->R.rax = (uint64_t)sys_filesize(rdi);
+			f->R.rax = (uint64_t)sys_filesize((int)rdi);
 			break;
 
 		case SYS_EXEC:
 			check_address((const void *)rdi);
+			break;
+
+		case SYS_TELL:
+			f->R.rax = (uint64_t)sys_tell((int)rdi);
 			break;
 		
 		case SYS_CLOSE:
@@ -212,13 +217,14 @@ bool sys_create(const char *file, unsigned initial_size) {
 // sys_open 시스템 콜 (파일 열기)
 int sys_open(const char *file) {
 	struct file *newfile = filesys_open(file); // inode 생성과 struct file 초기화까지 모두 해주는 함수
+	// 파일 열기 실패 시 단순 -1 반환
 	if (newfile == NULL) { // 파일 열기 실패 시
-		sys_exit(-1); // 종료상태 -1로 종료
+		return -1;
 	}
 	
 	// thread 구조체 안의 fd_table에다가 열린 파일에 대한 fd 엔트리를 삽입
 	struct thread *cur_thread = thread_current();
-	int *fd_cnt = &(cur_thread->next_fd_num);
+	int fd_cnt = cur_thread->next_fd_num++;
 	
 	// 엔트리를 위한 공간 하나 초기화, 실패하면 프로세스 종료
 	struct fd_entry *entry = malloc(sizeof(*entry));
@@ -228,12 +234,12 @@ int sys_open(const char *file) {
 	}
 	
 	// 엔트리의 fd 번호 지정, 함수 반환 시 증가 카운터가 1 상승
-	entry->fd = *fd_cnt;
+	entry->fd = fd_cnt;
 	// 엔트리의 f를 지정
 	entry->f = newfile;
 	list_push_back(&cur_thread->fd_table, &entry->elem);
 	
-	return *(fd_cnt)++;
+	return fd_cnt;
 }
 
 // sys_filesize 시스템 콜 (파일의 크기)
@@ -248,6 +254,20 @@ int sys_filesize(int fd) {
 	struct fd_entry *cur_entry = list_entry(res, struct fd_entry, elem);
 	struct file *cur_file = cur_entry->f;
 	return file_length(cur_file);
+}
+
+// sys_tell 시스템 콜 (파일 디스크립터 내의 커서 위치)
+unsigned sys_tell(int fd) {
+	struct list_elem *res = find_fd_with_num(fd);
+	
+	// 조회하려는 엔트리가 없으면 -1 반환
+	if (res == NULL) {
+		return -1;
+	}
+	
+	struct fd_entry *cur_entry = list_entry(res, struct fd_entry, elem);
+	struct file *cur_file = cur_entry->f;
+	return file_tell(cur_file);
 }
 
 // sys_close 시스템 콜 (파일 닫기)
