@@ -14,6 +14,7 @@
 #include "intrinsic.h"
 #ifdef USERPROG
 #include "userprog/process.h"
+#include "userprog/syscall.h"
 #endif
 
 /* Random value for struct thread's `magic' member.
@@ -220,37 +221,37 @@ thread_create (const char *name, int priority,
 	thread_unblock (t);
 	thread_check_preemption();
 	return tid;
-		}
+}
 
-	void
-	thread_check_preemption (void){
-		enum intr_level old_level = intr_disable();
-		struct thread * curr = thread_current();
-		struct list_elem *e;
-		bool should_yield = false;
+void
+thread_check_preemption (void){
+	enum intr_level old_level = intr_disable();
+	struct thread * curr = thread_current();
+	struct list_elem *e;
+	bool should_yield = false;
 
 
-		for ( e = list_begin (&ready_list);
-			e != list_end (&ready_list);
-			e = list_next (e)) {
-				struct thread * candidate = list_entry ( e , struct thread, elem);
+	for ( e = list_begin (&ready_list);
+		e != list_end (&ready_list);
+		e = list_next (e)) {
+			struct thread * candidate = list_entry ( e , struct thread, elem);
 
-				if ( candidate -> priority > curr -> priority){
-					should_yield = true;
-					break;
-				}
-
+			if ( candidate -> priority > curr -> priority){
+				should_yield = true;
+				break;
 			}
 
-		if (should_yield){
-			if(intr_context())
-				intr_yield_on_return();
-
-			else
-				thread_yield();
 		}
-		intr_set_level(old_level);
+
+	if (should_yield){
+		if(intr_context())
+			intr_yield_on_return();
+
+		else
+			thread_yield();
 	}
+	intr_set_level(old_level);
+}
 
 
 /* 현재 스레드를 대기(sleep) 상태로 만듭니다.
@@ -605,6 +606,9 @@ init_thread (struct thread *t, const char *name, int priority) {
 	t->base_priority = priority;
 	t->wait_on_lock = NULL;
 	list_init(&(t->donations));
+	
+	list_init(&(t->fd_table));
+	t->next_fd_num = 2;
 
 	t->nice = 0;                                // 기본값 (thread_create에서 부모 값으로 덮어씀)
 	t->recent_cpu = 0;                          // 기본값 (thread_create에서 부모 값으로 덮어씀)

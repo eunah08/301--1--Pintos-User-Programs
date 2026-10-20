@@ -219,7 +219,7 @@ process_wait (tid_t child_tid UNUSED) {
     /* XXX: Hint) The pintos exit if process_wait (initd), we recommend you
      * XXX:       to add infinite loop here before
      * XXX:       implementing the process_wait. */
-    sema_down(&sema); // SW: 부모 프로세스가 세마포어를 내림으로써 자식 프로세스가 종료되기를 기다림
+    sleep_put(200);
     return -1;
 }
 
@@ -232,7 +232,6 @@ process_exit (void) {
      * TODO: project2/process_termination.html).
      * TODO: We recommend you to implement process resource cleanup here. */
 
-    sema_up(&sema); // SW: 자식 프로세스가 세마포어를 올리면 그때 부모 프로세스가 같이 종료
     process_cleanup ();
 }
 
