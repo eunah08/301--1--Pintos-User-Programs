@@ -289,13 +289,19 @@ void sys_close(int fd) {
 struct list_elem *find_fd_with_num(int fd) {
 	struct thread *cur_thread = thread_current();
 	struct list *fd_table = &(cur_thread->fd_table);
-	struct list_elem *fd_elem = list_front(fd_table);
 
-	while (fd_elem->next != NULL) {
-		struct fd_entry *cur_entry = list_entry(fd_elem, struct fd_entry, elem);
-		if (fd == cur_entry->fd) {
-			return fd_elem;
-		}
+	if (!list_empty(fd_table)) {
+		struct list_elem *fd_elem = list_front(fd_table);
+		struct fd_entry *cur_entry;
+
+		do {
+			cur_entry = list_entry(fd_elem, struct fd_entry, elem);
+			if (fd == cur_entry->fd) {
+				return fd_elem;
+			}
+
+			cur_entry = list_next(cur_entry);
+		} while (cur_entry != list_tail(fd_table));
 	}
 
 	return NULL;
